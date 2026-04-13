@@ -5,14 +5,25 @@ import json
 import os
 import re
 from datetime import datetime, timedelta
+# Line 14-15 수정 제안
+import pathlib
 
 # ─────────────────────────────────────────
 # 설정
 # ─────────────────────────────────────────
 st.set_page_config(page_title="KBO 팀 대시보드", layout="wide")
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-LOGO_DIR = os.path.join(DATA_DIR, "ai 구단 로고")
+# __file__ 대신 pathlib 사용
+BASE_DIR = pathlib.Path(__file__).parent
+DATA_DIR = BASE_DIR / "data"
+LOGO_DIR = DATA_DIR / "ai 구단 로고"
+
+# 이후 os.path.join 대신 / 연산자 사용
+logo_path = LOGO_DIR / LOGO_FILE.get(selected_team, "")
+
+# exists() 호출 수정
+if logo_path.exists():
+    st.image(str(logo_path), width=70)
 
 # 팀 이름 → 팀 코드 (gameId 기반)
 TEAM_CODE = {

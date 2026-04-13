@@ -13,17 +13,10 @@ import pathlib
 # ─────────────────────────────────────────
 st.set_page_config(page_title="KBO 팀 대시보드", layout="wide")
 
-# __file__ 대신 pathlib 사용
+import pathlib
 BASE_DIR = pathlib.Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
 LOGO_DIR = DATA_DIR / "ai 구단 로고"
-
-# 이후 os.path.join 대신 / 연산자 사용
-logo_path = LOGO_DIR / LOGO_FILE.get(selected_team, "")
-
-# exists() 호출 수정
-if logo_path.exists():
-    st.image(str(logo_path), width=70)
 
 # 팀 이름 → 팀 코드 (gameId 기반)
 TEAM_CODE = {
@@ -194,10 +187,11 @@ with col_sel:
     selected_team = st.selectbox("팀 선택", TEAMS, index=0, label_visibility="collapsed")
 
 team_color = TEAM_COLOR.get(selected_team, "#333333")
-logo_path = os.path.join(LOGO_DIR, LOGO_FILE.get(selected_team, ""))
+logo_filename = LOGO_FILE.get(selected_team, "")
+logo_path = LOGO_DIR / logo_filename if logo_filename else None
 with col_logo:
-    if os.path.exists(logo_path):
-        st.image(logo_path, width=70)
+    if logo_path and logo_path.exists():
+        st.image(str(logo_path), width=70)
 
 # 팀 기본 통계
 standings = calc_standings(match_elo)
@@ -265,11 +259,12 @@ with top_right:
         opp = nxt["Away"] if is_home else nxt["Home"]
         loc = "홈" if is_home else "원정"
         st.markdown(f"**{nxt['Date'].strftime('%m/%d')} {nxt.get('Time','TBD')}**")
-        opp_logo = os.path.join(LOGO_DIR, LOGO_FILE.get(opp, ""))
+        opp_logo_filename = LOGO_FILE.get(opp, "")
+        opp_logo = LOGO_DIR / opp_logo_filename if opp_logo_filename else None
         c1, c2 = st.columns([1, 3])
         with c1:
-            if os.path.exists(opp_logo):
-                st.image(opp_logo, width=50)
+            if opp_logo and opp_logo.exists():
+                st.image(str(opp_logo), width=50)
         with c2:
             st.markdown(f"**vs {opp}** ({loc})")
             st.markdown(f"🏟️ {nxt.get('Stadium', '-')}")
@@ -835,9 +830,10 @@ h2h_df = pd.DataFrame(h2h_data)
 cols = st.columns(9)
 for i, (_, row) in enumerate(h2h_df.iterrows()):
     with cols[i % 9]:
-        opp_logo2 = os.path.join(LOGO_DIR, LOGO_FILE.get(row["상대팀"], ""))
-        if os.path.exists(opp_logo2):
-            st.image(opp_logo2, width=40)
+        opp_logo_filename = LOGO_FILE.get(row["상대팀"], "")
+        opp_logo2 = LOGO_DIR / opp_logo_filename if opp_logo_filename else None
+        if opp_logo2 and opp_logo2.exists():
+            st.image(str(opp_logo2), width=40)
         color_h2h = "#1a7f37" if row["승"] > row["패"] else ("#cf222e" if row["승"] < row["패"] else "#6e7781")
         st.markdown(f'<div style="text-align:center;font-size:12px;"><b>{row["상대팀"]}</b><br><span style="color:{color_h2h}">{row["전적"]}</span></div>', unsafe_allow_html=True)
 

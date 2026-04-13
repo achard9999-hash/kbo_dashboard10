@@ -158,15 +158,7 @@ def result_badge(r):
         return '<span style="background:#6e7781;color:white;padding:2px 8px;border-radius:4px;font-weight:bold;">무</span>'
 
 
-def ip_to_float(ip):
-    """이닝 표시: 5.2 → 5.67 이닝(실수)"""
-    try:
-        ip = float(ip)
-        full = int(ip)
-        frac = round(ip - full, 1)
-        return full + (frac / 0.3 * 0.1) if frac > 0 else full
-    except Exception:
-        return 0.0
+
 
 
 # ─────────────────────────────────────────
@@ -537,7 +529,7 @@ with rot_tab2:
             role_cnt["선발"] = 0
         if "중계" not in role_cnt.columns:
             role_cnt["중계"] = 0
-        role_cnt["total"] = role_cnt.get("선발", 0) + role_cnt.get("중계", 0) + role_cnt.get("nan", 0)
+        role_cnt["total"] = role_cnt["선발"] + role_cnt["중계"]
         role_cnt["G_all"] = pp_lat2.set_index("선수명")["G"].reindex(role_cnt["선수명"]).values
         role_cnt["start_pct"] = role_cnt["선발"] / role_cnt["G_all"].where(role_cnt["G_all"] > 0, 1)
         starters_season = role_cnt[role_cnt["start_pct"] >= 0.5]["선수명"].tolist()
@@ -612,16 +604,17 @@ def calc_overload(player_df):
     for _, row in df.iterrows():
         pitches = row.get("투구수", 0) or 0
         cur_date = row["날짜"]
-        game_id = row.get("gameId", "")
         # 더블헤더 감지: 같은 날짜 2번 등판
         same_day_count = sum(1 for d in prev_date_list if d == cur_date)
         if same_day_count >= 1:
             mult = 5.0
         elif prev_date is not None:
             rest = (cur_date - prev_date).days - 1
-            if rest <= 0:  # 연투
-                consec = sum(1 for d in prev_date_list[-2:] if (cur_date - d).days <= len(prev_date_list))
-                mult = 4.0  # 기본 2연투
+            if rest <= 0:  # 연투: 이전에도 연투였으면 3연투(×5), 아니면 2연투(×4)
+                if len(prev_date_list) >= 2 and (prev_date - prev_date_list[-2]).days <= 1:
+                    mult = 5.0  # 3연투
+                else:
+                    mult = 4.0  # 2연투
             elif rest == 1:
                 mult = 3.0
             elif rest == 2:
@@ -697,7 +690,7 @@ with perf_tab2:
         role_all.columns.name = None
         if "선발" not in role_all.columns: role_all["선발"] = 0
         if "중계" not in role_all.columns: role_all["중계"] = 0
-        role_all["G_t"] = role_all.get("선발", 0) + role_all.get("중계", 0)
+        role_all["G_t"] = role_all["선발"] + role_all["중계"]
         role_all["start_pct_all"] = role_all["선발"] / role_all["G_t"].where(role_all["G_t"] > 0, 1)
         pp_all_lat = pp_all_lat.merge(role_all[["팀", "선수명", "start_pct_all"]], on=["팀", "선수명"], how="left")
         def get_qual_ip(team):
